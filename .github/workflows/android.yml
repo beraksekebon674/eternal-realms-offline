@@ -12,6 +12,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,16 +24,26 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
-
       - name: Install Android SDK
-        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - uses: chickensoft-games/setup-godot@v1
         with:
           version: 4.4.1
           use-dotnet: false
           include-templates: true
+
+      - name: Configure Godot
+        run: |
+          mkdir -p ~/.config/godot
+          cat > ~/.config/godot/editor_settings-4.tres <<EOF
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          EOF
 
       - name: Build APK
         run: |
@@ -41,3 +55,5 @@ jobs:
         with:
           name: EternalRealms-APK
           path: build/EternalRealms.apk
+          if-no-files-found: error
+          retention-days: 14
